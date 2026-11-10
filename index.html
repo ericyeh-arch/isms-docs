@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ISMS 文件總覽</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d2330;--muted:#6b7385;--line:#e1e4ea;--accent:#2557d6;--accent-bg:#e8eefc;--warn:#c2410c;--warn-bg:#fff1e8;--word:#2b579a;--excel:#1d6f42;--pdf:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1b2029;--text:#e6e9f0;--muted:#8d96a8;--line:#2b3240;--accent:#7aa2ff;--accent-bg:#232d4a;--warn:#fb923c;--warn-bg:#33231a;--word:#6c9be0;--excel:#4cc38a;--pdf:#f0776a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+[hidden]{display:none!important}
+header{padding:24px 16px 8px;max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+h1{margin:0 0 4px;font-size:22px}
+header p{margin:0;color:var(--muted)}
+.who{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px 48px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:110px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:13px}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input,select,button{font:inherit}
+input[type=search],input[type=email],input[type=password]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+input[type=search]{flex:1 1 260px}
+select,button{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font-size:14px;cursor:pointer}
+button.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;padding:9px 16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.count{color:var(--muted);font-size:13px;margin:4px 0 8px}
+.grp{margin:18px 0 6px;font-weight:700}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card.miss{background:var(--warn-bg);border-style:dashed;border-color:var(--warn)}
+.code{font:600 13px ui-monospace,Consolas,monospace;color:var(--accent)}.miss .code{color:var(--warn)}
+.title{font-weight:600;word-break:break-all}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--accent-bg);color:var(--accent)}.tag.w{background:var(--warn-bg);color:var(--warn)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.acts button{font-size:13px;padding:3px 10px;border-radius:6px;border:1px solid currentColor;background:transparent}
+.fw{color:var(--word)}.fe{color:var(--excel)}.fp{color:var(--pdf)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+#login{max-width:380px;margin:80px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+#login h1{margin-bottom:14px}#login input{width:100%;margin-bottom:10px}
+.msg{color:#dc2626;min-height:1.4em;font-size:.9rem}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:20;padding:3vh 3vw}
+#modal.show{display:flex;flex-direction:column}
+#modal .top{background:var(--card);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-radius:10px 10px 0 0;gap:10px}
+#modal .top span{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#modal iframe{flex:1;border:0;background:#fff;border-radius:0 0 10px 10px}
+@media(max-width:480px){.list{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<!-- 登入(未登入時頁面上沒有任何文件資料) -->
+<div id="login" hidden>
+  <h1>ISMS 文件庫</h1>
+  <input id="email" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="密碼" autocomplete="current-password">
+  <button class="primary" id="go" type="button" style="width:100%">登入</button>
+  <div class="msg" id="lmsg" role="alert"></div>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div><h1>ISMS 資訊安全文件總覽</h1><p>程序書與表單紀錄(ISO 27001:2022)。可搜尋、篩選、預覽 PDF,或下載 Word / Excel 原始檔。</p></div>
+    <div class="who"><span id="me"></span><a href="admin.html" id="adminLink" hidden>管理後台</a><button id="logout" type="button">登出</button></div>
+  </header>
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+    <div class="bar">
+      <input type="search" id="q" placeholder="搜尋編號或名稱,例如 帳號、IS-D-09">
+      <select id="type"><option value="">全部類別</option><option value="B">程序書 (IS-B)</option><option value="D">表單/紀錄 (IS-D)</option></select>
+      <select id="grp"><option value="">全部群組</option></select>
+      <div class="chips" id="fmt"></div>
+      <button id="miss" type="button">只看缺號</button>
+      <button id="hideMiss" type="button">隱藏缺號</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="out"></div>
+  </div>
+</div>
+
+<div id="modal"><div class="top"><span id="mt"></span><button id="mc" type="button">關閉 ✕</button></div><iframe id="mf" title="PDF 預覽"></iframe></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = s => document.querySelector(s);
+const FM = {word:["Word","fw"], excel:["Excel","fe"], pdf:["PDF","fp"]};
+const GROUPS = {"01":"組織與 ISMS 管理","02":"文件管理","03":"資訊資產","04":"風險評鑑","05":"人員安全與教育訓練","06":"實體安全與機房","07":"系統與網路","08":"帳號與存取控制","09":"系統服務申請","10":"委外管理","11":"安全事件","12":"業務永續運作","13":"稽核","14":"矯正與預防","15":"委外與自評"};
+const state = {q:"", type:"", grp:"", fmt:new Set(), onlyMiss:false, hideMiss:false};
+let DOCS = [];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---------- 登入 ----------
+function showLogin(msg){ $("#app").hidden = true; $("#login").hidden = false; $("#lmsg").textContent = msg || ""; }
+async function boot(){
+  const { data:{ session } } = await db.auth.getSession();
+  if(!session){ showLogin(); return; }
+  const { data:ok, error } = await db.rpc("is_viewer");
+  if(error || !ok){ await db.auth.signOut(); showLogin("此帳號沒有檢視權限,請聯絡管理員"); return; }
+  const { data:adm } = await db.rpc("is_admin");
+  $("#me").textContent = session.user.email; $("#adminLink").hidden = !adm;
+  const { data, error:e2 } = await db.from("isms_docs").select("code,title,files");
+  if(e2){ showLogin("讀取失敗:" + e2.message); return; }
+  DOCS = buildList(data);
+  $("#login").hidden = true; $("#app").hidden = false;
+  initUI(); render();
+}
+$("#go").onclick = async () => {
+  $("#lmsg").textContent = "";
+  const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#pw").value });
+  if(error){ $("#lmsg").textContent = "登入失敗:帳號或密碼錯誤"; return; }
+  $("#pw").value = ""; boot();
+};
+$("#pw").addEventListener("keydown", e => { if(e.key==="Enter") $("#go").click(); });
+$("#logout").onclick = async () => { await db.auth.signOut(); DOCS = []; $("#out").replaceChildren(); showLogin(); };
+
+// ---------- 資料整理:補上缺號 ----------
+function buildList(rows){
+  const m = new Map();
+  for(const r of rows){
+    const p = r.code.split("-");                       // IS, B|D, nn, [nn]
+    m.set(r.code, { code:r.code, type:p[1], grp:p[2], title:r.title, files:r.files||{},
+      tags:["停用","線上文件","線上歸檔","限閱"].filter(t => r.title.includes(t)) });
+  }
+  const out = [];
+  const miss = (code,type,grp) => ({ code, type, grp, title:"", files:{}, tags:[], missing:true });
+  const bmax = Math.max(0, ...[...m.values()].filter(d=>d.type==="B").map(d=>+d.grp));
+  for(let n=1;n<=bmax;n++){ const c=`IS-B-${String(n).padStart(2,"0")}`; out.push(m.get(c)||miss(c,"B","")); }
+  const dmax = Math.max(0, ...[...m.values()].filter(d=>d.type==="D").map(d=>+d.grp));
+  for(let a=1;a<=dmax;a++){
+    const g = String(a).padStart(2,"0");
+    const subs = [...m.values()].filter(d=>d.type==="D" && d.grp===g).map(d=>+d.code.split("-")[3]);
+    for(let b=1;b<=Math.max(0,...subs);b++){ const c=`IS-D-${g}-${String(b).padStart(2,"0")}`; out.push(m.get(c)||miss(c,"D",g)); }
+  }
+  return out;
+}
+const gname = d => d.type==="B" ? "程序書" : `D-${d.grp} ${GROUPS[d.grp]||""}`;
+
+// ---------- 介面 ----------
+let uiReady = false;
+function initUI(){
+  const have = DOCS.filter(d=>!d.missing);
+  const files = have.reduce((n,d)=>n+Object.keys(d.files).length,0);
+  const items = [[have.length,"文件"],[have.filter(d=>d.type==="B").length,"程序書"],[have.filter(d=>d.type==="D").length,"表單/紀錄"],[files,"檔案"],[DOCS.length-have.length,"缺號"]];
+  $("#stats").innerHTML = items.map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+  if(uiReady) return; uiReady = true;
+  Object.keys(GROUPS).forEach(k=>$("#grp").insertAdjacentHTML("beforeend",`<option value="${k}">D-${k} ${GROUPS[k]}</option>`));
+  $("#fmt").innerHTML = Object.entries(FM).map(([k,[n]])=>`<button type="button" data-f="${k}">${n}</button>`).join("");
+}
+
+function render(){
+  const q = state.q.trim().toLowerCase();
+  const list = DOCS.filter(d=>{
+    if(state.type && d.type!==state.type) return false;
+    if(state.grp && !(d.type==="D" && d.grp===state.grp)) return false;
+    if(state.onlyMiss && !d.missing) return false;
+    if(state.hideMiss && d.missing) return false;
+    if(state.fmt.size && ![...state.fmt].every(f=>d.files[f])) return false;
+    if(q && !(d.code+" "+d.title).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  $("#count").textContent = `顯示 ${list.length} / ${DOCS.length} 項`;
+  if(!list.length){ $("#out").innerHTML='<div class="empty">沒有符合的文件</div>'; return; }
+  let html="", last=null;
+  for(const d of list){
+    const g = gname(d);
+    if(g!==last){ if(last!==null) html+="</div>"; html+=`<div class="grp">${esc(g)}</div><div class="list">`; last=g; }
+    if(d.missing){ html+=`<div class="card miss"><span class="code">${d.code}</span><div class="title">缺號</div><div class="tags"><span class="tag w">目錄中沒有此編號</span></div></div>`; continue; }
+    const only = Object.keys(d.files).length===1 && d.files.pdf;
+    const tags = d.tags.map(t=>`<span class="tag ${t==="停用"?"w":""}">${t}</span>`).join("") + (only?'<span class="tag w">僅有 PDF</span>':"");
+    const acts = Object.entries(FM).filter(([k])=>d.files[k]).map(([k,[n,c]])=>
+      k==="pdf" ? `<button type="button" class="${c}" data-act="view" data-code="${d.code}">預覽 PDF</button><button type="button" class="${c}" data-act="get" data-k="pdf" data-code="${d.code}">下載 PDF</button>`
+                : `<button type="button" class="${c}" data-act="get" data-k="${k}" data-code="${d.code}">下載 ${n}</button>`).join("");
+    html+=`<div class="card"><span class="code">${d.code}</span><div class="title">${esc(d.title)}</div><div class="tags">${tags}</div><div class="acts">${acts}</div></div>`;
+  }
+  $("#out").innerHTML = html+"</div>";
+}
+
+// 每次點擊才向 Supabase 要 60 秒有效的簽名連結(未授權者拿不到)
+async function signed(d, k, asDownload){
+  const path = d.files[k];
+  const name = `${d.code}-${d.title}.${path.split(".").pop()}`;
+  const { data, error } = await db.storage.from("isms").createSignedUrl(path, 60, asDownload ? { download:name } : undefined);
+  if(error) throw error; return data.signedUrl;
+}
+$("#out").onclick = async e => {
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  const d = DOCS.find(x=>x.code===b.dataset.code); b.disabled = true;
+  try{
+    if(b.dataset.act==="view"){ $("#mt").textContent = d.code+" "+d.title; $("#mf").src = await signed(d,"pdf",false); $("#modal").classList.add("show"); }
+    else { const a = document.createElement("a"); a.href = await signed(d,b.dataset.k,true); document.body.append(a); a.click(); a.remove(); }
+  }catch(err){ alert("無法開啟檔案:" + err.message); }
+  finally{ b.disabled = false; }
+};
+const closeM = () => { $("#modal").classList.remove("show"); $("#mf").src = "about:blank"; };
+$("#mc").onclick = closeM; document.addEventListener("keydown", e => { if(e.key==="Escape") closeM(); });
+
+$("#q").oninput = e=>{state.q=e.target.value;render()};
+$("#type").onchange = e=>{state.type=e.target.value;render()};
+$("#grp").onchange = e=>{state.grp=e.target.value; if(state.grp){state.type="D";$("#type").value="D"} render()};
+$("#fmt").onclick = e=>{const f=e.target.dataset.f; if(!f)return; state.fmt.has(f)?state.fmt.delete(f):state.fmt.add(f); e.target.classList.toggle("on"); render()};
+$("#miss").onclick = e=>{state.onlyMiss=!state.onlyMiss; if(state.onlyMiss){state.hideMiss=false;$("#hideMiss").classList.remove("on")} e.target.classList.toggle("on",state.onlyMiss); render()};
+$("#hideMiss").onclick = e=>{state.hideMiss=!state.hideMiss; if(state.hideMiss){state.onlyMiss=false;$("#miss").classList.remove("on")} e.target.classList.toggle("on",state.hideMiss); render()};
+
+db.auth.onAuthStateChange(ev => { if(ev==="SIGNED_OUT") showLogin(); });
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ISMS 文件庫管理後台</title>
+<style>
+:root{--bg:#f4f6f8;--surface:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--brand:#2563eb;--danger:#dc2626;--ok:#10b981}
+@media(prefers-color-scheme:dark){:root{--bg:#0b0f14;--surface:#131a22;--text:#e8edf3;--muted:#8a97a8;--line:#222c37}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+h1{font-size:1.3rem;margin:0}h2{font-size:1.05rem;margin:0 0 12px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+input,select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit;font:inherit}
+button{padding:9px 16px;border:0;border-radius:8px;background:var(--brand);color:#fff;font:inherit;cursor:pointer}
+button:disabled{opacity:.5}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+button.del{background:transparent;color:var(--danger);padding:2px 8px;border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tabs button{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+.msg{color:var(--danger);min-height:1.4em;font-size:.9rem}.msg.ok{color:var(--ok)}
+.scroll{overflow-x:auto}
+.hint{color:var(--muted);font-size:.88rem;margin:0 0 12px}
+#log{font:12px/1.6 ui-monospace,Consolas,monospace;max-height:240px;overflow:auto;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:10px}
+progress{width:100%;height:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="card" style="max-width:380px;margin:60px auto" hidden>
+    <h1 style="margin-bottom:14px">管理員登入</h1>
+    <div class="row"><input id="email" type="email" placeholder="Email" style="width:100%"></div>
+    <div class="row"><input id="pw" type="password" placeholder="密碼" style="width:100%"></div>
+    <button id="go" type="button" style="width:100%">登入</button>
+    <div class="msg" id="lmsg" role="alert"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="top"><h1>ISMS 文件庫管理後台</h1>
+      <div class="row" style="margin:0"><a href="index.html" style="color:var(--muted)">回文件總覽</a><button class="ghost" id="logout" type="button">登出</button></div></div>
+    <div class="tabs"><button class="on" data-t="docs" type="button">文件</button><button data-t="viewers" type="button">可檢視名單</button></div>
+
+    <section id="t-docs">
+      <div class="card">
+        <h2>上傳文件</h2>
+        <p class="hint">選取多個檔案(或整個資料夾)。檔名須為 <code>IS-D-09-01-名稱.docx</code> 格式,系統會依編號建立/更新文件,並依副檔名分到 Word / Excel / PDF。同編號同格式會覆蓋舊檔。名稱含「複製」的檔案會略過。</p>
+        <div class="row"><input id="files" type="file" multiple accept=".docx,.doc,.odt,.xlsx,.xls,.pdf"></div>
+        <div class="row"><button id="up" type="button" disabled>開始上傳</button><span id="upinfo" class="hint" style="margin:0"></span></div>
+        <progress id="prog" value="0" max="1" hidden></progress>
+        <div id="log" hidden></div>
+      </div>
+      <div class="card"><h2>已建立的文件 <span id="dcount" class="hint"></span></h2>
+        <div class="scroll"><table><thead><tr><th>編號</th><th>名稱</th><th>格式</th><th></th></tr></thead><tbody id="dbody"></tbody></table></div>
+        <div class="msg" id="dmsg"></div></div>
+    </section>
+
+    <section id="t-viewers" hidden>
+      <div class="card"><h2>新增可檢視者</h2>
+        <p class="hint">步驟:① 到 Supabase Dashboard → Authentication → Users → Add user 建立帳號(關閉公開註冊)② 在此加入該 Email。不在名單內的帳號看不到任何文件。</p>
+        <div class="row"><input id="vmail" type="email" placeholder="Email" style="flex:1 1 220px"><input id="vnote" placeholder="備註(單位/姓名)" style="flex:1 1 160px"><button id="vadd" type="button">加入</button></div>
+        <div class="msg" id="vmsg"></div></div>
+      <div class="card"><h2>名單</h2>
+        <div class="scroll"><table><thead><tr><th>Email</th><th>備註</th><th></th></tr></thead><tbody id="vbody"></tbody></table></div></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KIND = { docx:"word", doc:"word", odt:"word", xlsx:"excel", xls:"excel", pdf:"pdf" };
+
+function showLogin(msg){ $("#app").hidden = true; $("#login").hidden = false; $("#lmsg").textContent = msg || ""; }
+async function boot(){
+  const { data:{ session } } = await db.auth.getSession();
+  if(!session){ showLogin(); return; }
+  const { data:ok } = await db.rpc("is_admin");
+  if(!ok){ await db.auth.signOut(); showLogin("此帳號不是管理員"); return; }
+  $("#login").hidden = true; $("#app").hidden = false; loadDocs(); loadViewers();
+}
+$("#go").onclick = async () => {
+  const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#pw").value });
+  if(error){ $("#lmsg").textContent = "登入失敗:帳號或密碼錯誤"; return; } $("#pw").value=""; boot();
+};
+$("#pw").addEventListener("keydown", e => { if(e.key==="Enter") $("#go").click(); });
+$("#logout").onclick = async () => { await db.auth.signOut(); showLogin(); };
+document.querySelector(".tabs").onclick = e => {
+  const t = e.target.dataset.t; if(!t) return;
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b===e.target));
+  $("#t-docs").hidden = t!=="docs"; $("#t-viewers").hidden = t!=="viewers";
+};
+
+// ---------- 文件 ----------
+async function loadDocs(){
+  const { data, error } = await db.from("isms_docs").select("code,title,files").order("code");
+  if(error){ $("#dmsg").textContent = error.message; return; }
+  $("#dcount").textContent = `(${data.length})`;
+  $("#dbody").innerHTML = data.map(d => `<tr><td>${esc(d.code)}</td><td>${esc(d.title)}</td><td>${Object.keys(d.files).join("、")}</td>
+    <td><button class="del" data-code="${esc(d.code)}" type="button">刪除</button></td></tr>`).join("");
+}
+$("#dbody").onclick = async e => {
+  const code = e.target.dataset.code; if(!code) return;
+  if(!confirm(`確定刪除 ${code} 及其所有檔案?此動作無法復原。`)) return;
+  const { data:row } = await db.from("isms_docs").select("files").eq("code", code).single();
+  const paths = Object.values(row?.files || {});
+  if(paths.length){ const { error } = await db.storage.from("isms").remove(paths); if(error){ $("#dmsg").textContent = error.message; return; } }
+  const { error } = await db.from("isms_docs").delete().eq("code", code);
+  $("#dmsg").textContent = error ? error.message : ""; loadDocs();
+};
+
+let queue = [];
+function parse(f){
+  const dot = f.name.lastIndexOf("."); if(dot<0) return null;
+  const ext = f.name.slice(dot+1).toLowerCase(), base = f.name.slice(0,dot);
+  const m = base.match(/^IS-([BD])-(\d{2})(?:-(\d{2}))?-?(.*)$/);   // 容許編號後漏打 "-"
+  const kind = KIND[ext]; if(!m || !kind) return null;
+  if(/複製|\bcopy\b/i.test(base)) return { skip:"名稱含「複製」" };
+  const code = `IS-${m[1]}-${m[2]}` + (m[3] ? `-${m[3]}` : "");
+  return { f, ext, kind, code, title:m[4].trim() || code };
+}
+$("#files").onchange = e => {
+  const items = [...e.target.files].map(f => ({ name:f.name, p:parse(f) }));
+  queue = items.filter(i => i.p && !i.p.skip).map(i => i.p);
+  const bad = items.filter(i => !i.p), skip = items.filter(i => i.p && i.p.skip);
+  $("#upinfo").textContent = `可上傳 ${queue.length} 個` + (skip.length ? `,略過 ${skip.length} 個複本` : "") + (bad.length ? `,${bad.length} 個檔名不符:${bad.map(b=>b.name).join("、")}` : "");
+  $("#up").disabled = !queue.length;
+};
+const log = t => { const l = $("#log"); l.hidden = false; l.textContent += t + "\n"; l.scrollTop = l.scrollHeight; };
+$("#up").onclick = async () => {
+  $("#up").disabled = true; $("#log").textContent = ""; const prog = $("#prog"); prog.hidden = false; prog.max = queue.length; prog.value = 0;
+  const byCode = new Map(); let fail = 0;
+  for(const q of queue){
+    const path = `${q.kind}/${q.code}.${q.ext}`;                     // Storage 鍵一律用 ASCII,中文名稱放資料表
+    const { error } = await db.storage.from("isms").upload(path, q.f, { upsert:true, contentType:q.f.type || undefined });
+    if(error){ fail++; log(`✗ ${q.f.name}:${error.message}`); }
+    else { log(`✓ ${q.f.name}`); const e = byCode.get(q.code) || { files:{}, title:null }; e.files[q.kind] = path; if(q.kind!=="pdf" || !e.title) e.title = q.title; byCode.set(q.code, e); }
+    prog.value++;
+  }
+  const codes = [...byCode.keys()];
+  const { data:old } = codes.length ? await db.from("isms_docs").select("code,title,files").in("code", codes) : { data:[] };
+  const oldMap = new Map((old||[]).map(r => [r.code, r]));
+  const rows = codes.map(c => { const n = byCode.get(c), o = oldMap.get(c);
+    return { code:c, title:n.title || o?.title || c, files:{ ...(o?.files||{}), ...n.files }, updated_at:new Date().toISOString() }; });
+  if(rows.length){ const { error } = await db.from("isms_docs").upsert(rows); if(error){ log("資料表寫入失敗:" + error.message); fail++; } }
+  log(fail ? `完成,有 ${fail} 項失敗` : `全部完成:${rows.length} 份文件`);
+  $("#files").value = ""; queue = []; loadDocs();
+};
+
+// ---------- 可檢視名單 ----------
+async function loadViewers(){
+  const { data, error } = await db.from("isms_viewers").select("email,note").order("email");
+  if(error){ $("#vmsg").textContent = error.message; return; }
+  $("#vbody").innerHTML = data.map(v => `<tr><td>${esc(v.email)}</td><td>${esc(v.note)}</td><td><button class="del" data-e="${esc(v.email)}" type="button">移除</button></td></tr>`).join("") || '<tr><td colspan="3" class="hint">尚無名單</td></tr>';
+}
+$("#vadd").onclick = async () => {
+  const email = $("#vmail").value.trim().toLowerCase(); if(!email) return;
+  const { error } = await db.from("isms_viewers").upsert({ email, note:$("#vnote").value.trim() || null });
+  $("#vmsg").className = "msg" + (error ? "" : " ok"); $("#vmsg").textContent = error ? error.message : "已加入";
+  if(!error){ $("#vmail").value = ""; $("#vnote").value = ""; loadViewers(); }
+};
+$("#vbody").onclick = async e => {
+  const em = e.target.dataset.e; if(!em || !confirm(`移除 ${em}?`)) return;
+  await db.from("isms_viewers").delete().eq("email", em); loadViewers();
+};
+boot();
+</script>
+</body>
+</html>
