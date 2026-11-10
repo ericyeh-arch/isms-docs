@@ -5,173 +5,477 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>ISMS 文件庫管理後台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f4f6f8;--surface:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--brand:#2563eb;--danger:#dc2626;--ok:#10b981}
-@media(prefers-color-scheme:dark){:root{--bg:#0b0f14;--surface:#131a22;--text:#e8edf3;--muted:#8a97a8;--line:#222c37}}
+:root{
+  --bg:#eef1f4; --panel:#fff; --ink:#17212b; --muted:#5b6877; --line:#d9dfe6; --line2:#e8ecf0;
+  --side:#14202b; --side-ink:#c7d2dd; --side-on:#fff; --side-line:#24323f;
+  --accent:#0b6e8a; --accent-ink:#fff; --accent-soft:#e1f1f5;
+  --s1:#bfe3ec; --s2:#5db2c8; --s3:#0b6e8a;          /* 單色漸層:格式越齊全越深 */
+  --warn:#9a4a07; --warn-bg:#fdf1e0; --warn-line:#d98a2b;
+  --danger:#b42318; --ok:#17794d;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0d1319; --panel:#151f29; --ink:#e7edf3; --muted:#93a2b2; --line:#283541; --line2:#202c37;
+  --side:#0a1016; --side-line:#1b2732;
+  --accent:#4fb4cf; --accent-ink:#06222b; --accent-soft:#17303a;
+  --s1:#1d4654; --s2:#2f819a; --s3:#74c6dc;
+  --warn:#f0a04b; --warn-bg:#2a2013; --warn-line:#b9772d; --danger:#f2766b; --ok:#4cc38a;
+}}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
-.wrap{max-width:960px;margin:0 auto;padding:16px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-h1{font-size:1.3rem;margin:0}h2{font-size:1.05rem;margin:0 0 12px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap}
-input,select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit;font:inherit}
-button{padding:9px 16px;border:0;border-radius:8px;background:var(--brand);color:#fff;font:inherit;cursor:pointer}
-button:disabled{opacity:.5}
-button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
-button.del{background:transparent;color:var(--danger);padding:2px 8px;border:1px solid var(--line)}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.tabs{display:flex;gap:6px;margin-bottom:16px}
-.tabs button{background:var(--surface);color:var(--text);border:1px solid var(--line)}
-.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+html{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.code{font-family:var(--mono);font-size:.86em;letter-spacing:.01em}
+
+/* ---------- 登入 ---------- */
+#login{min-height:100vh;display:grid;place-items:center;padding:16px}
+.login-box{width:min(380px,100%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px}
+.login-box h1{margin:0 0 4px;font-size:1.25rem}.login-box p{margin:0 0 18px;color:var(--muted);font-size:.9rem}
+.login-box label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+
+/* ---------- 版面 ---------- */
+#app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
+aside{background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;padding:20px 12px;position:sticky;top:0;height:100vh}
+.brand{padding:0 10px 18px;border-bottom:1px solid var(--side-line);margin-bottom:12px}
+.brand b{display:block;color:var(--side-on);font-size:1.05rem}.brand span{font-size:.8rem;opacity:.7}
+nav{display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:7px;color:inherit;text-decoration:none}
+nav a:hover{background:var(--side-line)}
+nav a[aria-current=page]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+nav .n{font-size:.8rem;opacity:.75}
+.who{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--side-line);font-size:.82rem}
+.who div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px}
+.who a,.who button{color:var(--side-ink);background:none;border:0;padding:2px 0;cursor:pointer;text-decoration:underline;display:block;font-size:.85rem}
+main{padding:28px 32px 64px;min-width:0;max-width:1240px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1.page{margin:0;font-size:1.5rem;line-height:1.25}.head p{margin:2px 0 0;color:var(--muted)}
+h2{margin:0 0 2px;font-size:1.02rem}.sub{margin:0 0 14px;color:var(--muted);font-size:.86rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.cols .panel{margin:0}
+
+/* ---------- 共用元件 ---------- */
+.btn{padding:8px 14px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.btn.sm{padding:3px 10px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+input[type=text],input[type=email],input[type=password],input[type=search],select{padding:8px 11px;border:1px solid var(--line);border-radius:7px;background:var(--panel);min-width:0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar .grow{flex:1 1 220px}
 table{width:100%;border-collapse:collapse;font-size:.92rem}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
-.msg{color:var(--danger);min-height:1.4em;font-size:.9rem}.msg.ok{color:var(--ok)}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+th{color:var(--muted);font-weight:500;font-size:.82rem;white-space:nowrap}
+tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 .scroll{overflow-x:auto}
-.hint{color:var(--muted);font-size:.88rem;margin:0 0 12px}
-#log{font:12px/1.6 ui-monospace,Consolas,monospace;max-height:240px;overflow:auto;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:10px}
-progress{width:100%;height:10px}
+.fmt{display:inline-flex;gap:4px}
+.chip{font-size:.78rem;padding:1px 9px;border-radius:99px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.off{opacity:.3;cursor:default;pointer-events:none}
+.tag{font-size:.78rem;padding:1px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}.tag.bad{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}.tag.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.muted{color:var(--muted)}.empty{padding:28px 8px;text-align:center;color:var(--muted)}
+.msg{min-height:1.4em;font-size:.88rem;color:var(--danger)}.msg.ok{color:var(--ok)}
+
+/* ---------- 總覽:數字列 ---------- */
+.strip{display:flex;flex-wrap:wrap;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.strip div{flex:1 1 120px;padding:12px 18px;border-right:1px solid var(--line2)}
+.strip div:last-child{border-right:0}
+.strip b{display:block;font-size:1.55rem;line-height:1.2}.strip span{color:var(--muted);font-size:.82rem}
+.strip .w b{color:var(--warn)}
+
+/* ---------- 編號矩陣 ---------- */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin:0 0 12px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.mrow{display:grid;grid-template-columns:148px 1fr;gap:10px;align-items:start;padding:5px 0}
+.mrow>span{font-size:.85rem;padding-top:3px;color:var(--muted)}.mrow>span b{color:var(--ink);font-weight:500}
+.cells{display:flex;flex-wrap:wrap;gap:2px}
+.cell{width:26px;height:26px;border-radius:4px;border:0;padding:0;font:600 .66rem var(--mono);cursor:pointer;color:var(--accent-ink);background:var(--s2);position:relative}
+.cell.f1{background:var(--s1);color:var(--ink)}.cell.f2{background:var(--s2)}.cell.f3{background:var(--s3)}
+.cell.miss{background:var(--warn-bg);border:1.5px dashed var(--warn-line);color:var(--warn)}
+.cell:hover,.cell:focus-visible{outline:2px solid var(--ink);outline-offset:1px;z-index:1}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:7px;font-size:.82rem;max-width:280px;box-shadow:0 4px 16px #0004}
+#tip b{font-family:var(--mono);font-weight:500}
+
+/* ---------- 長條 ---------- */
+.brow{display:grid;grid-template-columns:184px 1fr 52px;gap:10px;align-items:center;padding:3px 0;font-size:.86rem}
+.brow>span:first-child{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btrack{display:flex;gap:2px;height:14px}
+.seg{height:100%;border-radius:2px 5px 5px 2px}
+.seg.have{background:var(--s3)}
+.seg.gap{background:repeating-linear-gradient(135deg,var(--warn-line) 0 2px,transparent 2px 5px);border:1px solid var(--warn-line);border-radius:2px}
+.brow em{font-style:normal;text-align:right;color:var(--muted)}
+.vbars{display:flex;align-items:flex-end;gap:4px;height:130px;border-bottom:1px solid var(--line);padding-top:6px}
+.vbars button{flex:1;min-width:0;border:0;background:none;padding:0;height:100%;display:flex;align-items:flex-end;cursor:default}
+.vbars i{display:block;width:100%;background:var(--s3);border-radius:4px 4px 0 0;min-height:2px}
+.vbars button:hover i{background:var(--ink)}
+.vlab{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin-top:4px}
+.toplist{margin:14px 0 0;padding:0;list-style:none;font-size:.88rem}
+.toplist li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--line2)}
+.toplist span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- 上傳 ---------- */
+.drop{border:2px dashed var(--line);border-radius:12px;padding:30px 16px;text-align:center;color:var(--muted);transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.drop .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+progress{width:100%;height:8px;accent-color:var(--accent)}
+.up-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+
+/* ---------- 對話框 / 提示 ---------- */
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:22px;width:min(440px,92vw)}
+dialog::backdrop{background:#0008}
+dialog h3{margin:0 0 6px}dialog p{margin:0 0 14px;color:var(--muted)}dialog input{width:100%;margin-bottom:14px}
+dialog .acts{display:flex;gap:8px;justify-content:flex-end}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:60;max-width:90vw}
+ol.steps{margin:0;padding-left:20px;color:var(--muted);font-size:.9rem}ol.steps li{margin-bottom:6px}
+
+@media(max-width:900px){
+  #app{grid-template-columns:1fr}
+  aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px}
+  .brand{border:0;margin:0;padding:0 8px 0 0}nav{flex-direction:row;flex-wrap:wrap}.who{margin:0 0 0 auto;border:0;padding:0}
+  main{padding:20px 16px 48px}.cols{grid-template-columns:1fr}
+  .mrow{grid-template-columns:1fr;gap:2px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div id="login" class="card" style="max-width:380px;margin:60px auto" hidden>
-    <h1 style="margin-bottom:14px">管理員登入</h1>
-    <div class="row"><input id="email" type="email" placeholder="Email" style="width:100%"></div>
-    <div class="row"><input id="pw" type="password" placeholder="密碼" style="width:100%"></div>
-    <button id="go" type="button" style="width:100%">登入</button>
+
+<div id="login" hidden>
+  <form class="login-box" id="loginForm">
+    <h1>ISMS 文件庫管理後台</h1><p>請以管理員帳號登入</p>
+    <label for="email">Email</label><input id="email" type="email" autocomplete="username" required style="width:100%">
+    <label for="pw">密碼</label><input id="pw" type="password" autocomplete="current-password" required style="width:100%">
+    <button class="btn primary" type="submit" style="width:100%;margin-top:16px">登入</button>
     <div class="msg" id="lmsg" role="alert"></div>
-  </div>
-
-  <div id="app" hidden>
-    <div class="top"><h1>ISMS 文件庫管理後台</h1>
-      <div class="row" style="margin:0"><a href="index.html" style="color:var(--muted)">回文件總覽</a><button class="ghost" id="logout" type="button">登出</button></div></div>
-    <div class="tabs"><button class="on" data-t="docs" type="button">文件</button><button data-t="viewers" type="button">可檢視名單</button></div>
-
-    <section id="t-docs">
-      <div class="card">
-        <h2>上傳文件</h2>
-        <p class="hint">選取多個檔案(或整個資料夾)。檔名須為 <code>IS-D-09-01-名稱.docx</code> 格式,系統會依編號建立/更新文件,並依副檔名分到 Word / Excel / PDF。同編號同格式會覆蓋舊檔。名稱含「複製」的檔案會略過。</p>
-        <div class="row"><input id="files" type="file" multiple accept=".docx,.doc,.odt,.xlsx,.xls,.pdf"></div>
-        <div class="row"><button id="up" type="button" disabled>開始上傳</button><span id="upinfo" class="hint" style="margin:0"></span></div>
-        <progress id="prog" value="0" max="1" hidden></progress>
-        <div id="log" hidden></div>
-      </div>
-      <div class="card"><h2>已建立的文件 <span id="dcount" class="hint"></span></h2>
-        <div class="scroll"><table><thead><tr><th>編號</th><th>名稱</th><th>格式</th><th></th></tr></thead><tbody id="dbody"></tbody></table></div>
-        <div class="msg" id="dmsg"></div></div>
-    </section>
-
-    <section id="t-viewers" hidden>
-      <div class="card"><h2>新增可檢視者</h2>
-        <p class="hint">步驟:① 到 Supabase Dashboard → Authentication → Users → Add user 建立帳號(關閉公開註冊)② 在此加入該 Email。不在名單內的帳號看不到任何文件。</p>
-        <div class="row"><input id="vmail" type="email" placeholder="Email" style="flex:1 1 220px"><input id="vnote" placeholder="備註(單位/姓名)" style="flex:1 1 160px"><button id="vadd" type="button">加入</button></div>
-        <div class="msg" id="vmsg"></div></div>
-      <div class="card"><h2>名單</h2>
-        <div class="scroll"><table><thead><tr><th>Email</th><th>備註</th><th></th></tr></thead><tbody id="vbody"></tbody></table></div></div>
-    </section>
-  </div>
+  </form>
 </div>
+
+<div id="app" hidden>
+  <aside>
+    <div class="brand"><b>ISMS 文件庫</b><span>管理後台</span></div>
+    <nav id="nav">
+      <a href="#overview" data-v="overview">總覽</a>
+      <a href="#docs" data-v="docs">文件<span class="n" id="nDocs"></span></a>
+      <a href="#upload" data-v="upload">上傳</a>
+      <a href="#viewers" data-v="viewers">檢視者<span class="n" id="nViewers"></span></a>
+      <a href="#log" data-v="log">活動紀錄</a>
+    </nav>
+    <div class="who"><div id="me"></div><a href="index.html">回文件總覽</a><button id="logout" type="button">登出</button></div>
+  </aside>
+  <main id="view" tabindex="-1"></main>
+</div>
+
+<dialog id="dlg"><h3 id="dTitle"></h3><p id="dBody"></p><input id="dInput" type="text" hidden><div class="acts"><button class="btn" id="dNo" type="button">取消</button><button class="btn primary" id="dYes" type="button">確定</button></div></dialog>
+<div id="tip" hidden></div><div id="toast" role="status" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script>
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KIND = { docx:"word", doc:"word", odt:"word", xlsx:"excel", xls:"excel", pdf:"pdf" };
+const KNAME = { word:"Word", excel:"Excel", pdf:"PDF" };
+const GROUPS = {"01":"組織與 ISMS 管理","02":"文件管理","03":"資訊資產","04":"風險評鑑","05":"人員安全與教育訓練","06":"實體安全與機房","07":"系統與網路","08":"帳號與存取控制","09":"系統服務申請","10":"委外管理","11":"安全事件","12":"業務永續運作","13":"稽核","14":"矯正與預防","15":"委外與自評"};
+let DOCS = [], VIEWERS = [], LOG = [], ME = "";
+const fmtT = t => new Date(t).toLocaleString("zh-TW", { hour12:false, month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" });
+const fmtD = t => new Date(t).toLocaleDateString("zh-TW");
 
-function showLogin(msg){ $("#app").hidden = true; $("#login").hidden = false; $("#lmsg").textContent = msg || ""; }
+/* ---------- 提示 / 對話框 ---------- */
+let toastT;
+function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3200); }
+function ask({title, body="", input=null, ok="確定", danger=false}){
+  return new Promise(res => {
+    const d=$("#dlg"), i=$("#dInput");
+    $("#dTitle").textContent=title; $("#dBody").textContent=body;
+    i.hidden = input===null; i.value = input ?? "";
+    $("#dYes").textContent=ok; $("#dYes").className = "btn " + (danger?"danger":"primary");
+    const done = v => { d.close(); res(v); };
+    $("#dYes").onclick = () => done(input===null ? true : i.value.trim());
+    $("#dNo").onclick = () => done(null);
+    d.oncancel = e => { e.preventDefault(); done(null); };
+    d.showModal(); if(input!==null) i.focus();
+  });
+}
+
+/* ---------- 登入 ---------- */
+function showLogin(msg){ $("#app").hidden=true; $("#login").hidden=false; $("#lmsg").textContent=msg||""; }
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#pw").value });
+  if(error){ $("#lmsg").textContent="登入失敗:帳號或密碼錯誤"; return; }
+  $("#pw").value=""; boot();
+};
+$("#logout").onclick = async () => { await db.auth.signOut(); showLogin(); };
 async function boot(){
   const { data:{ session } } = await db.auth.getSession();
   if(!session){ showLogin(); return; }
   const { data:ok } = await db.rpc("is_admin");
   if(!ok){ await db.auth.signOut(); showLogin("此帳號不是管理員"); return; }
-  $("#login").hidden = true; $("#app").hidden = false; loadDocs(); loadViewers();
+  ME = session.user.email; $("#me").textContent = ME;
+  $("#login").hidden=true; $("#app").hidden=false;
+  await loadAll(); route();
 }
-$("#go").onclick = async () => {
-  const { error } = await db.auth.signInWithPassword({ email:$("#email").value.trim(), password:$("#pw").value });
-  if(error){ $("#lmsg").textContent = "登入失敗:帳號或密碼錯誤"; return; } $("#pw").value=""; boot();
-};
-$("#pw").addEventListener("keydown", e => { if(e.key==="Enter") $("#go").click(); });
-$("#logout").onclick = async () => { await db.auth.signOut(); showLogin(); };
-document.querySelector(".tabs").onclick = e => {
-  const t = e.target.dataset.t; if(!t) return;
-  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b===e.target));
-  $("#t-docs").hidden = t!=="docs"; $("#t-viewers").hidden = t!=="viewers";
-};
+async function loadAll(){
+  const [d,v,l] = await Promise.all([
+    db.from("isms_docs").select("code,title,files,updated_at").order("code"),
+    db.from("isms_viewers").select("email,note,created_at").order("email"),
+    db.from("isms_access_log").select("at,email,action,code,kind").order("at",{ascending:false}).limit(2000)
+  ]);
+  DOCS = d.data || []; VIEWERS = v.data || []; LOG = l.data || [];
+  window.__logErr = l.error?.message || "";
+  $("#nDocs").textContent = DOCS.length; $("#nViewers").textContent = VIEWERS.length;
+}
 
-// ---------- 文件 ----------
-async function loadDocs(){
-  const { data, error } = await db.from("isms_docs").select("code,title,files").order("code");
-  if(error){ $("#dmsg").textContent = error.message; return; }
-  $("#dcount").textContent = `(${data.length})`;
-  $("#dbody").innerHTML = data.map(d => `<tr><td>${esc(d.code)}</td><td>${esc(d.title)}</td><td>${Object.keys(d.files).join("、")}</td>
-    <td><button class="del" data-code="${esc(d.code)}" type="button">刪除</button></td></tr>`).join("");
-}
-$("#dbody").onclick = async e => {
-  const code = e.target.dataset.code; if(!code) return;
-  if(!confirm(`確定刪除 ${code} 及其所有檔案?此動作無法復原。`)) return;
-  const { data:row } = await db.from("isms_docs").select("files").eq("code", code).single();
-  const paths = Object.values(row?.files || {});
-  if(paths.length){ const { error } = await db.storage.from("isms").remove(paths); if(error){ $("#dmsg").textContent = error.message; return; } }
-  const { error } = await db.from("isms_docs").delete().eq("code", code);
-  $("#dmsg").textContent = error ? error.message : ""; loadDocs();
-};
-
-let queue = [];
-function parse(f){
-  const dot = f.name.lastIndexOf("."); if(dot<0) return null;
-  const ext = f.name.slice(dot+1).toLowerCase(), base = f.name.slice(0,dot);
-  const m = base.match(/^IS-([BD])-(\d{2})(?:-(\d{2}))?-?(.*)$/);   // 容許編號後漏打 "-"
-  const kind = KIND[ext]; if(!m || !kind) return null;
-  if(/複製|\bcopy\b/i.test(base)) return { skip:"名稱含「複製」" };
-  const code = `IS-${m[1]}-${m[2]}` + (m[3] ? `-${m[3]}` : "");
-  return { f, ext, kind, code, title:m[4].trim() || code };
-}
-$("#files").onchange = e => {
-  const items = [...e.target.files].map(f => ({ name:f.name, p:parse(f) }));
-  queue = items.filter(i => i.p && !i.p.skip).map(i => i.p);
-  const bad = items.filter(i => !i.p), skip = items.filter(i => i.p && i.p.skip);
-  $("#upinfo").textContent = `可上傳 ${queue.length} 個` + (skip.length ? `,略過 ${skip.length} 個複本` : "") + (bad.length ? `,${bad.length} 個檔名不符:${bad.map(b=>b.name).join("、")}` : "");
-  $("#up").disabled = !queue.length;
-};
-const log = t => { const l = $("#log"); l.hidden = false; l.textContent += t + "\n"; l.scrollTop = l.scrollHeight; };
-$("#up").onclick = async () => {
-  $("#up").disabled = true; $("#log").textContent = ""; const prog = $("#prog"); prog.hidden = false; prog.max = queue.length; prog.value = 0;
-  const byCode = new Map(); let fail = 0;
-  for(const q of queue){
-    const path = `${q.kind}/${q.code}.${q.ext}`;                     // Storage 鍵一律用 ASCII,中文名稱放資料表
-    const { error } = await db.storage.from("isms").upload(path, q.f, { upsert:true, contentType:q.f.type || undefined });
-    if(error){ fail++; log(`✗ ${q.f.name}:${error.message}`); }
-    else { log(`✓ ${q.f.name}`); const e = byCode.get(q.code) || { files:{}, title:null }; e.files[q.kind] = path; if(q.kind!=="pdf" || !e.title) e.title = q.title; byCode.set(q.code, e); }
-    prog.value++;
+/* ---------- 資料整理 ---------- */
+const sub = c => c.split("-").length>3 ? +c.split("-")[3] : 0;
+function slots(){            // 依連號推算的所有編號位置(含缺號)
+  const m = new Map(DOCS.map(d=>[d.code,d])), rows=[];
+  const bmax = Math.max(0,...DOCS.filter(d=>d.code.startsWith("IS-B")).map(d=>+d.code.split("-")[2]));
+  rows.push({ key:"B", label:"程序書", name:"IS-B", items:Array.from({length:bmax},(_,i)=>{const c=`IS-B-${String(i+1).padStart(2,"0")}`; return {code:c,n:i+1,doc:m.get(c)}}) });
+  for(const g of Object.keys(GROUPS).sort()){
+    const max = Math.max(0,...DOCS.filter(d=>d.code.startsWith(`IS-D-${g}-`)).map(d=>sub(d.code)));
+    if(!max) continue;
+    rows.push({ key:g, label:GROUPS[g], name:`D-${g}`, items:Array.from({length:max},(_,i)=>{const c=`IS-D-${g}-${String(i+1).padStart(2,"0")}`; return {code:c,n:i+1,doc:m.get(c)}}) });
   }
-  const codes = [...byCode.keys()];
-  const { data:old } = codes.length ? await db.from("isms_docs").select("code,title,files").in("code", codes) : { data:[] };
-  const oldMap = new Map((old||[]).map(r => [r.code, r]));
-  const rows = codes.map(c => { const n = byCode.get(c), o = oldMap.get(c);
-    return { code:c, title:n.title || o?.title || c, files:{ ...(o?.files||{}), ...n.files }, updated_at:new Date().toISOString() }; });
-  if(rows.length){ const { error } = await db.from("isms_docs").upsert(rows); if(error){ log("資料表寫入失敗:" + error.message); fail++; } }
-  log(fail ? `完成,有 ${fail} 項失敗` : `全部完成:${rows.length} 份文件`);
-  $("#files").value = ""; queue = []; loadDocs();
-};
-
-// ---------- 可檢視名單 ----------
-async function loadViewers(){
-  const { data, error } = await db.from("isms_viewers").select("email,note").order("email");
-  if(error){ $("#vmsg").textContent = error.message; return; }
-  $("#vbody").innerHTML = data.map(v => `<tr><td>${esc(v.email)}</td><td>${esc(v.note)}</td><td><button class="del" data-e="${esc(v.email)}" type="button">移除</button></td></tr>`).join("") || '<tr><td colspan="3" class="hint">尚無名單</td></tr>';
+  return rows;
 }
-$("#vadd").onclick = async () => {
-  const email = $("#vmail").value.trim().toLowerCase(); if(!email) return;
-  const { error } = await db.from("isms_viewers").upsert({ email, note:$("#vnote").value.trim() || null });
-  $("#vmsg").className = "msg" + (error ? "" : " ok"); $("#vmsg").textContent = error ? error.message : "已加入";
-  if(!error){ $("#vmail").value = ""; $("#vnote").value = ""; loadViewers(); }
-};
-$("#vbody").onclick = async e => {
-  const em = e.target.dataset.e; if(!em || !confirm(`移除 ${em}?`)) return;
-  await db.from("isms_viewers").delete().eq("email", em); loadViewers();
-};
+const nf = d => Object.keys(d.files||{}).length;
+let CUR_DOC_Q = "";
+
+/* ---------- 路由 ---------- */
+const VIEWS = { overview:vOverview, docs:vDocs, upload:vUpload, viewers:vViewers, log:vLog };
+function route(){
+  const v = (location.hash||"#overview").slice(1).split("?")[0]; const name = VIEWS[v] ? v : "overview";
+  document.querySelectorAll("#nav a").forEach(a => a.dataset.v===name ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));
+  $("#view").innerHTML=""; VIEWS[name](); window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", () => { if(!$("#app").hidden) route(); });
+const go = (h) => { if(location.hash===h) route(); else location.hash=h; };
+
+/* ==================== 總覽 ==================== */
+function vOverview(){
+  const rows = slots(), all = rows.flatMap(r=>r.items), miss = all.filter(i=>!i.doc).length;
+  const since7 = Date.now()-7*864e5, n7 = LOG.filter(l=>new Date(l.at)>since7).length;
+  $("#view").innerHTML = `
+  <div class="head"><div><h1 class="page">總覽</h1><p>文件齊全度、缺號與近期使用情形</p></div></div>
+  <div class="strip">
+    <div><b>${DOCS.length}</b><span>文件</span></div>
+    <div><b>${DOCS.filter(d=>d.code.startsWith("IS-B")).length}</b><span>程序書</span></div>
+    <div><b>${DOCS.filter(d=>d.code.startsWith("IS-D")).length}</b><span>表單/紀錄</span></div>
+    <div class="w"><b>${miss}</b><span>缺號</span></div>
+    <div><b>${VIEWERS.length}</b><span>可檢視者</span></div>
+    <div><b>${n7}</b><span>近 7 日開啟/下載</span></div>
+  </div>
+  <section class="panel"><h2>編號矩陣</h2>
+    <p class="sub">每一格是一個編號。顏色越深代表可用的檔案格式越多;虛線橘框是依連號推算出的缺號,可能是停用、合併或遺失。點格子可跳到該文件或前往上傳。</p>
+    <div class="legend"><span><i style="background:var(--warn-bg);border:1.5px dashed var(--warn-line)"></i>缺號</span><span><i style="background:var(--s1)"></i>1 種格式</span><span><i style="background:var(--s2)"></i>2 種</span><span><i style="background:var(--s3)"></i>3 種</span></div>
+    <div id="matrix">${rows.map(r=>`<div class="mrow"><span><b>${esc(r.name)}</b> ${esc(r.label==="程序書"?"":r.label)}</span><div class="cells">${
+      r.items.map(i=>`<button type="button" class="cell ${i.doc?"f"+Math.min(3,nf(i.doc)):"miss"}" data-code="${i.code}" aria-label="${i.code} ${i.doc?esc(i.doc.title)+","+nf(i.doc)+" 種格式":"缺號"}">${String(i.n).padStart(2,"0")}</button>`).join("")}</div></div>`).join("")}</div>
+  </section>
+  <div class="cols">
+    <section class="panel"><h2>各群組文件數</h2><p class="sub">實心為已有文件,斜線為缺號</p>
+      ${rows.map(r=>{const have=r.items.filter(i=>i.doc).length, gap=r.items.length-have, mx=Math.max(...rows.map(x=>x.items.length));
+        return `<div class="brow"><span title="${esc(r.name+" "+r.label)}">${esc(r.name)} ${r.label==="程序書"?"":esc(r.label)}</span><div class="btrack"><div class="seg have" style="width:${have/mx*100}%"></div>${gap?`<div class="seg gap" style="width:${gap/mx*100}%"></div>`:""}</div><em>${have}/${r.items.length}</em></div>`}).join("")}
+    </section>
+    <section class="panel"><h2>近 14 日使用情形</h2><p class="sub">每日開啟與下載次數</p>${activityChart()}</section>
+  </div>`;
+}
+function activityChart(){
+  if(window.__logErr) return `<div class="empty">尚無法讀取活動紀錄:${esc(window.__logErr)}<br>請先在 Supabase 執行 schema.sql 的活動紀錄段落。</div>`;
+  if(!LOG.length) return `<div class="empty">尚無活動紀錄。使用者開啟或下載文件後會顯示在這裡。</div>`;
+  const days=[]; for(let i=13;i>=0;i--){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push({d, v:0, dl:0}); }
+  for(const l of LOG){ const t=new Date(l.at); t.setHours(0,0,0,0); const x=days.find(a=>+a.d===+t); if(x) l.action==="view"?x.v++:x.dl++; }
+  const mx=Math.max(1,...days.map(x=>x.v+x.dl));
+  const top = Object.entries(LOG.filter(l=>new Date(l.at)>Date.now()-30*864e5).reduce((a,l)=>(a[l.code]=(a[l.code]||0)+1,a),{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const title = c => DOCS.find(d=>d.code===c)?.title || "";
+  return `<div class="vbars" id="vbars">${days.map(x=>`<button type="button" data-tip="${x.d.toLocaleDateString("zh-TW")}|預覽 ${x.v} 次、下載 ${x.dl} 次" aria-label="${x.d.toLocaleDateString("zh-TW")} 共 ${x.v+x.dl} 次"><i style="height:${(x.v+x.dl)/mx*100}%"></i></button>`).join("")}</div>
+  <div class="vlab"><span>${days[0].d.toLocaleDateString("zh-TW",{month:"numeric",day:"numeric"})}</span><span>最高 ${mx} 次/日</span><span>今天</span></div>
+  ${top.length?`<ul class="toplist"><li class="muted"><span>近 30 日最常被看的文件</span><span>次數</span></li>${top.map(([c,n])=>`<li><span><span class="code">${c}</span> ${esc(title(c))}</span><span>${n}</span></li>`).join("")}</ul>`:""}`;
+}
+// 矩陣互動
+document.addEventListener("click", e => {
+  const c = e.target.closest(".cell"); if(!c) return;
+  const code = c.dataset.code;
+  if(c.classList.contains("miss")){ go("#upload"); toast(`${code} 目前缺號,可在此上傳對應檔案`); }
+  else { CUR_DOC_Q = code; go("#docs"); }
+});
+const tip = $("#tip");
+document.addEventListener("pointermove", e => {
+  const t = e.target.closest(".cell,[data-tip]");
+  if(!t){ tip.hidden=true; return; }
+  if(t.classList.contains("cell")){
+    const d = DOCS.find(x=>x.code===t.dataset.code);
+    tip.innerHTML = d ? `<b>${t.dataset.code}</b><br>${esc(d.title)}<br>${Object.keys(d.files).map(k=>KNAME[k]).join("、")}` : `<b>${t.dataset.code}</b><br>缺號`;
+  } else { const [a,b]=t.dataset.tip.split("|"); tip.innerHTML=`<b>${esc(a)}</b><br>${esc(b)}`; }
+  tip.hidden=false; const r=tip.getBoundingClientRect();
+  tip.style.left = Math.min(e.clientX+14, innerWidth-r.width-8)+"px"; tip.style.top = Math.min(e.clientY+14, innerHeight-r.height-8)+"px";
+});
+document.addEventListener("pointerleave", () => tip.hidden=true);
+
+/* ==================== 文件 ==================== */
+async function openFile(path, name, download){
+  const { data, error } = await db.storage.from("isms").createSignedUrl(path, 60, download?{download:name}:undefined);
+  if(error){ toast("無法開啟:"+error.message); return; }
+  window.open(data.signedUrl, "_blank", "noopener");
+}
+function vDocs(){
+  $("#view").innerHTML = `
+  <div class="head"><div><h1 class="page">文件</h1><p>搜尋、改名、開啟與刪除文件</p></div></div>
+  <section class="panel">
+    <div class="bar"><input type="search" id="dq" class="grow" placeholder="搜尋編號或名稱" aria-label="搜尋"><select id="dt" aria-label="類別"><option value="">全部類別</option><option value="IS-B">程序書</option><option value="IS-D">表單/紀錄</option></select><select id="df" aria-label="篩選"><option value="">全部</option><option value="pdfonly">僅有 PDF(無原始檔)</option><option value="nopdf">沒有 PDF</option></select></div>
+    <div class="scroll"><table><thead><tr><th>編號</th><th>名稱</th><th>檔案</th><th>更新</th><th></th></tr></thead><tbody id="dbody"></tbody></table></div>
+    <div class="msg" id="dmsg" role="alert"></div>
+  </section>`;
+  $("#dq").value = CUR_DOC_Q;
+  const draw = () => {
+    const q=$("#dq").value.trim().toLowerCase(), t=$("#dt").value, f=$("#df").value;
+    const list = DOCS.filter(d => (!t||d.code.startsWith(t)) && (!q||(d.code+" "+d.title).toLowerCase().includes(q)) &&
+      (!f || (f==="pdfonly" ? (nf(d)===1 && d.files.pdf) : !d.files.pdf)));
+    $("#dbody").innerHTML = list.map(d=>`<tr>
+      <td class="code">${d.code}</td><td>${esc(d.title)}</td>
+      <td><span class="fmt">${["word","excel","pdf"].map(k=>d.files[k]?`<button class="chip" type="button" data-open="${d.code}" data-k="${k}" title="開啟 ${KNAME[k]}">${KNAME[k]}</button>`:"").join("")}</span>${nf(d)===1&&d.files.pdf?' <span class="tag warn">僅有 PDF</span>':""}</td>
+      <td class="muted">${d.updated_at?fmtD(d.updated_at):""}</td>
+      <td style="white-space:nowrap"><button class="btn sm" type="button" data-edit="${d.code}">改名</button> <button class="btn sm danger" type="button" data-del="${d.code}">刪除</button></td></tr>`).join("")
+      || `<tr><td colspan="5" class="empty">沒有符合的文件</td></tr>`;
+  };
+  ["dq","dt","df"].forEach(i=>$("#"+i).addEventListener("input",()=>{CUR_DOC_Q=$("#dq").value;draw()}));
+  draw();
+  $("#dbody").onclick = async e => {
+    const b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.open){ const d=DOCS.find(x=>x.code===b.dataset.open); const p=d.files[b.dataset.k]; openFile(p, `${d.code}-${d.title}.${p.split(".").pop()}`, b.dataset.k!=="pdf"); }
+    if(b.dataset.edit){ const d=DOCS.find(x=>x.code===b.dataset.edit); const v=await ask({title:`修改名稱 ${d.code}`, body:"只改顯示名稱,不影響檔案與編號。", input:d.title, ok:"儲存"});
+      if(v){ const { error } = await db.from("isms_docs").update({title:v, updated_at:new Date().toISOString()}).eq("code",d.code); if(error) return $("#dmsg").textContent=error.message; d.title=v; toast("已儲存"); draw(); } }
+    if(b.dataset.del){ const d=DOCS.find(x=>x.code===b.dataset.del);
+      if(!await ask({title:`刪除 ${d.code}?`, body:`「${d.title}」及其 ${nf(d)} 個檔案會永久刪除,無法復原。`, ok:"永久刪除", danger:true})) return;
+      const paths=Object.values(d.files); if(paths.length){ const { error } = await db.storage.from("isms").remove(paths); if(error) return $("#dmsg").textContent=error.message; }
+      const { error } = await db.from("isms_docs").delete().eq("code",d.code); if(error) return $("#dmsg").textContent=error.message;
+      DOCS=DOCS.filter(x=>x!==d); $("#nDocs").textContent=DOCS.length; toast("已刪除"); draw(); }
+  };
+}
+
+/* ==================== 上傳 ==================== */
+let STAGE = [];                       // {f, ext, kind, code, title, state}
+function parse(f){
+  const dot=f.name.lastIndexOf("."); if(dot<0) return null;
+  const ext=f.name.slice(dot+1).toLowerCase(), base=f.name.slice(0,dot);
+  const m=base.match(/^IS-([BD])-(\d{2})(?:-(\d{2}))?-?(.*)$/), kind=KIND[ext];
+  if(!m||!kind) return null;
+  const code=`IS-${m[1]}-${m[2]}`+(m[3]?`-${m[3]}`:"");
+  return { f, ext, kind, code, title:m[4].trim()||code, copy:/複製|\bcopy\b/i.test(base) };
+}
+function vUpload(){
+  STAGE = [];
+  $("#view").innerHTML = `
+  <div class="head"><div><h1 class="page">上傳</h1><p>檔名需為 <span class="code">IS-D-09-01-名稱.docx</span> 的格式,系統依編號建立文件,依副檔名分到 Word / Excel / PDF</p></div></div>
+  <section class="panel">
+    <div class="drop" id="drop"><div>把檔案拖曳到這裡</div>
+      <div class="row"><button class="btn primary" id="pickF" type="button">選擇檔案</button><button class="btn" id="pickD" type="button">選擇資料夾</button></div>
+      <input id="inF" type="file" multiple hidden accept=".docx,.doc,.odt,.xlsx,.xls,.pdf"><input id="inD" type="file" webkitdirectory multiple hidden></div>
+  </section>
+  <section class="panel" id="stage" hidden><h2>待上傳</h2><p class="sub" id="stageSub"></p>
+    <div class="scroll"><table><thead><tr><th>檔案</th><th>編號</th><th>格式</th><th>狀態</th><th></th></tr></thead><tbody id="sbody"></tbody></table></div>
+    <progress id="prog" value="0" max="1" hidden></progress>
+    <div class="up-foot"><button class="btn primary" id="go" type="button">開始上傳</button><button class="btn" id="clear" type="button">清空</button><span class="msg" id="umsg" role="alert"></span></div>
+  </section>`;
+  const add = files => { for(const f of files){ const p=parse(f); STAGE.push(p||{f,bad:true}); } drawStage(); };
+  $("#pickF").onclick=()=>$("#inF").click(); $("#pickD").onclick=()=>$("#inD").click();
+  $("#inF").onchange=e=>{add(e.target.files);e.target.value=""}; $("#inD").onchange=e=>{add(e.target.files);e.target.value=""};
+  const dr=$("#drop"); ["dragenter","dragover"].forEach(t=>dr.addEventListener(t,e=>{e.preventDefault();dr.classList.add("over")}));
+  ["dragleave","drop"].forEach(t=>dr.addEventListener(t,e=>{e.preventDefault();dr.classList.remove("over")}));
+  dr.addEventListener("drop",e=>add(e.dataTransfer.files));
+  $("#clear").onclick=()=>{STAGE=[];drawStage()}; $("#go").onclick=runUpload;
+  $("#sbody").onclick=e=>{const i=e.target.dataset.rm; if(i!==undefined){STAGE.splice(+i,1);drawStage()}};
+}
+function status(s, i){          // 回傳 [標籤, 樣式, 可上傳?]
+  if(s.bad) return ["檔名不符格式或不支援","bad",false];
+  if(s.copy) return ["名稱含「複製」,略過","warn",false];
+  if(s.state) return s.state;
+  const dup = STAGE.filter(x=>!x.bad&&!x.copy&&x.code===s.code&&x.kind===s.kind);
+  if(dup.length>1) return ["衝突:同編號同格式有 "+dup.length+" 個檔案,請移除多的","bad",false];
+  const ex = DOCS.find(d=>d.code===s.code);
+  return ex?.files?.[s.kind] ? ["覆蓋現有檔案","warn",true] : [ex?"補上新格式":"新增文件","ok",true];
+}
+function drawStage(){
+  $("#stage").hidden = !STAGE.length; if(!STAGE.length) return;
+  const st = STAGE.map(status), okN = st.filter(x=>x[2]).length;
+  $("#sbody").innerHTML = STAGE.map((s,i)=>`<tr><td>${esc(s.f.name)}</td><td class="code">${s.code||""}</td><td>${s.kind?KNAME[s.kind]:""}</td><td><span class="tag ${st[i][1]}">${esc(st[i][0])}</span></td><td><button class="btn sm" type="button" data-rm="${i}">移除</button></td></tr>`).join("");
+  $("#stageSub").textContent = `共 ${STAGE.length} 個檔案,可上傳 ${okN} 個`; $("#go").disabled = !okN;
+}
+async function runUpload(){
+  const jobs = STAGE.filter((s,i)=>status(s,i)[2]); if(!jobs.length) return;
+  $("#go").disabled=true; const prog=$("#prog"); prog.hidden=false; prog.max=jobs.length; prog.value=0; let fail=0;
+  const by = new Map();
+  for(const j of jobs){
+    const path=`${j.kind}/${j.code}.${j.ext}`;
+    const { error } = await db.storage.from("isms").upload(path, j.f, { upsert:true, contentType:j.f.type||undefined });
+    if(error){ fail++; j.state=["失敗:"+error.message,"bad",false]; }
+    else { j.state=["已上傳","ok",false]; const e=by.get(j.code)||{files:{},title:null}; e.files[j.kind]=path; if(j.kind!=="pdf"||!e.title) e.title=j.title; by.set(j.code,e); }
+    prog.value++; drawStage();
+  }
+  const codes=[...by.keys()];
+  if(codes.length){
+    const { data:old } = await db.from("isms_docs").select("code,title,files").in("code",codes);
+    const om=new Map((old||[]).map(r=>[r.code,r]));
+    const rows=codes.map(c=>{const n=by.get(c),o=om.get(c); const keepOld = o && n.files && !Object.keys(n.files).some(k=>k!=="pdf");
+      return {code:c, title:keepOld?o.title:(n.title||o?.title||c), files:{...(o?.files||{}),...n.files}, updated_at:new Date().toISOString()}});
+    const { error } = await db.from("isms_docs").upsert(rows); if(error){ fail++; $("#umsg").textContent="資料表寫入失敗:"+error.message; }
+  }
+  await loadAll(); $("#umsg").className="msg"+(fail?"":" ok"); if(!fail) $("#umsg").textContent=`完成:${codes.length} 份文件已更新`;
+  toast(fail?`完成,有 ${fail} 項失敗`:"上傳完成");
+}
+
+/* ==================== 檢視者 ==================== */
+function vViewers(){
+  const last = {}; for(const l of LOG){ if(!last[l.email]) last[l.email]=l.at; }
+  $("#view").innerHTML = `
+  <div class="head"><div><h1 class="page">檢視者</h1><p>只有名單內、且有登入帳號的人看得到文件</p></div></div>
+  <div class="cols">
+    <section class="panel"><h2>名單</h2><p class="sub">${VIEWERS.length} 人</p>
+      <div class="scroll"><table><thead><tr><th>Email</th><th>備註</th><th>最近使用</th><th></th></tr></thead><tbody>${
+        VIEWERS.map(v=>`<tr><td>${esc(v.email)}</td><td>${esc(v.note)}</td><td class="muted">${last[v.email]?fmtT(last[v.email]):"尚未使用"}</td><td><button class="btn sm danger" type="button" data-rm="${esc(v.email)}">移除</button></td></tr>`).join("") || `<tr><td colspan="4" class="empty">名單是空的,從右邊加入第一位</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="panel"><h2>加入檢視者</h2>
+      <form id="vf" class="bar" style="flex-direction:column"><input type="email" id="vmail" placeholder="Email" required><input type="text" id="vnote" placeholder="備註(單位/姓名,可不填)"><button class="btn primary" type="submit">加入名單</button></form>
+      <div class="msg" id="vmsg" role="alert"></div>
+      <h2 style="margin-top:18px">還需要登入帳號</h2>
+      <ol class="steps"><li>Supabase Dashboard → Authentication → Users</li><li>Add user(自行設密碼並勾選 Auto Confirm)或 Invite user(對方收信自設密碼)</li><li>對方用該 Email 登入文件總覽</li></ol>
+    </section>
+  </div>`;
+  $("#vf").onsubmit = async e => { e.preventDefault();
+    const email=$("#vmail").value.trim().toLowerCase(), note=$("#vnote").value.trim()||null;
+    const { error } = await db.from("isms_viewers").upsert({email,note});
+    if(error){ $("#vmsg").className="msg"; $("#vmsg").textContent=error.message; return; }
+    await loadAll(); toast(`已加入 ${email}`); vViewers(); };
+  document.querySelector(".scroll").onclick = async e => { const em=e.target.dataset.rm; if(!em) return;
+    if(!await ask({title:`移除 ${em}?`, body:"對方之後將看不到任何文件(帳號本身不會被刪除)。", ok:"移除", danger:true})) return;
+    const { error } = await db.from("isms_viewers").delete().eq("email",em); if(error) return toast(error.message);
+    await loadAll(); toast("已移除"); vViewers(); };
+}
+
+/* ==================== 活動紀錄 ==================== */
+function vLog(){
+  $("#view").innerHTML = `
+  <div class="head"><div><h1 class="page">活動紀錄</h1><p>誰在何時開啟或下載了哪份文件(最近 ${LOG.length} 筆)</p></div><button class="btn" id="csv" type="button">匯出 CSV</button></div>
+  <section class="panel">
+    <div class="bar"><input type="search" id="lq" class="grow" placeholder="搜尋 Email 或編號"><select id="la"><option value="">全部動作</option><option value="view">預覽</option><option value="download">下載</option></select></div>
+    <div class="scroll"><table><thead><tr><th>時間</th><th>使用者</th><th>動作</th><th>文件</th></tr></thead><tbody id="lbody"></tbody></table></div></section>`;
+  const filt = () => { const q=$("#lq").value.trim().toLowerCase(), a=$("#la").value;
+    return LOG.filter(l=>(!a||l.action===a)&&(!q||(l.email+" "+l.code).toLowerCase().includes(q))); };
+  const draw = () => { const rows=filt().slice(0,300);
+    $("#lbody").innerHTML = rows.map(l=>`<tr><td class="muted">${new Date(l.at).toLocaleString("zh-TW",{hour12:false})}</td><td>${esc(l.email)}</td><td><span class="tag">${l.action==="view"?"預覽":"下載"}${l.kind?" "+KNAME[l.kind]:""}</span></td><td><span class="code">${esc(l.code)}</span> ${esc(DOCS.find(d=>d.code===l.code)?.title||"")}</td></tr>`).join("")
+      || `<tr><td colspan="4" class="empty">${window.__logErr?esc("無法讀取:"+window.__logErr):"尚無符合的紀錄"}</td></tr>`; };
+  $("#lq").oninput=draw; $("#la").oninput=draw; draw();
+  $("#csv").onclick = () => { const safe=v=>{v=String(v??"");if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+    const csv="﻿"+["時間,使用者,動作,格式,編號,名稱",...filt().map(l=>[new Date(l.at).toLocaleString("zh-TW",{hour12:false}),l.email,l.action==="view"?"預覽":"下載",l.kind||"",l.code,DOCS.find(d=>d.code===l.code)?.title||""].map(safe).join(","))].join("\r\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=`isms-activity-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); };
+}
+
 boot();
 </script>
 </body>

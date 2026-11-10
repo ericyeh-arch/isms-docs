@@ -148,7 +148,7 @@ function initUI(){
   const items = [[have.length,"文件"],[have.filter(d=>d.type==="B").length,"程序書"],[have.filter(d=>d.type==="D").length,"表單/紀錄"],[files,"檔案"],[DOCS.length-have.length,"缺號"]];
   $("#stats").innerHTML = items.map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
   if(uiReady) return; uiReady = true;
-  Object.keys(GROUPS).forEach(k=>$("#grp").insertAdjacentHTML("beforeend",`<option value="${k}">D-${k} ${GROUPS[k]}</option>`));
+  Object.keys(GROUPS).sort().forEach(k=>$("#grp").insertAdjacentHTML("beforeend",`<option value="${k}">D-${k} ${GROUPS[k]}</option>`));
   $("#fmt").innerHTML = Object.entries(FM).map(([k,[n]])=>`<button type="button" data-f="${k}">${n}</button>`).join("");
 }
 
@@ -185,7 +185,11 @@ async function signed(d, k, asDownload){
   const path = d.files[k];
   const name = `${d.code}-${d.title}.${path.split(".").pop()}`;
   const { data, error } = await db.storage.from("isms").createSignedUrl(path, 60, asDownload ? { download:name } : undefined);
-  if(error) throw error; return data.signedUrl;
+  if(error) throw error;
+  // 稽核紀錄:誰、何時、看/下載了哪份文件(失敗不影響使用)
+  db.auth.getSession().then(({data:{session}}) => session && db.from("isms_access_log")
+    .insert({ email:session.user.email.toLowerCase(), action:asDownload?"download":"view", code:d.code, kind:k })).catch(()=>{});
+  return data.signedUrl;
 }
 $("#out").onclick = async e => {
   const b = e.target.closest("button[data-act]"); if(!b) return;

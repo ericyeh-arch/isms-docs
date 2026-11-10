@@ -54,6 +54,26 @@ create policy viewers_admin on public.isms_viewers for all to authenticated
 grant execute on function public.is_admin()  to authenticated;
 grant execute on function public.is_viewer() to authenticated;
 
+-- 活動紀錄:誰在何時開啟/下載了哪份文件(稽核用;只有管理員讀得到)
+create table if not exists public.isms_access_log (
+  id     bigint generated always as identity primary key,
+  at     timestamptz not null default now(),
+  email  text not null,
+  action text not null check (action in ('view', 'download')),
+  code   text not null,
+  kind   text
+);
+create index if not exists isms_access_log_at on public.isms_access_log (at desc);
+alter table public.isms_access_log enable row level security;
+revoke all on public.isms_access_log from anon, authenticated;
+grant select, insert on public.isms_access_log to authenticated;
+drop policy if exists log_insert on public.isms_access_log;
+drop policy if exists log_read   on public.isms_access_log;
+create policy log_insert on public.isms_access_log for insert to authenticated
+  with check (public.is_viewer() and email = lower(coalesce(auth.jwt() ->> 'email', '')));
+create policy log_read on public.isms_access_log for select to authenticated
+  using (public.is_admin());
+
 -- ========== 私有檔案庫 ==========
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('isms', 'isms', false, 52428800)       -- 單檔上限 50 MB
